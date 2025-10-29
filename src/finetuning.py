@@ -22,13 +22,14 @@ class LoRA(nn.Module):
         self.r = r
         self.alpha = alpha
         self.original_layer = original_layer
+        
+        in_features, out_features = self.original_layer.weight.shape
 
         # TODO: Low-rank matrices A and B for LoRA
-        self.B = nn.Parameter(torch.zeros(r, self.original_layer.in_features))
-        self.A = nn.Parameter(torch.empty(self.original_layer.out_features, r))
+        self.B = nn.Parameter(torch.zeros(r, in_features))
+        self.A = nn.Parameter(torch.empty(out_features, r))
 
         # TODO: Initialize LoRA weights (B is zero-initialized, A is random)
-        torch.manual_seed(42)
         nn.init.kaiming_uniform_(self.A, a = math.sqrt(5))
         
         # TODO: Scaling factor alpha 
@@ -41,9 +42,8 @@ class LoRA(nn.Module):
     def forward(self, x):
         # TODO: Perform forward pass with low-rank update
         original_output = self.original_layer(x)
-        lora_output = (x @ (self.A @ self.B))* self.scaling
+        lora_output = (x @ self.A @ self.B) * self.scaling
         out = original_output + lora_output
-        print("output:::",out)
         return out
 
 def inject_lora_into_model(model, r=4, alpha=32, device='cpu'):
